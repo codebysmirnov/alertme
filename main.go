@@ -28,6 +28,7 @@ func main() {
 	ticker := time.NewTicker(time.Duration(intervalMinutes) * time.Minute)
 	stopTicker := make(chan struct{})      // Channel to stop the current timer
 	startNextTicker := make(chan struct{}) // Channel to start the next timer
+	skipTicker := make(chan struct{})      // Channel to skip the rest
 	totalRestTime := time.Duration(0)      // Variable to count the total rest time
 
 	restNotificationText := widget.NewLabel("You need to rest! Press 'Continue button' after the rest")
@@ -36,6 +37,13 @@ func main() {
 		stopTicker <- struct{}{}      // Send a signal to stop the current timer
 		startNextTicker <- struct{}{} // Send a signal to start the next timer
 		log.Println("Continue button pressed")
+	})
+
+	skipButton := widget.NewButton("Skip", func() {
+		w.Hide()
+		skipTicker <- struct{}{}      // Send a signal to skip the rest
+		startNextTicker <- struct{}{} // Send a signal to start the next timer
+		log.Println("Skip button pressed")
 	})
 
 	totalRestLabel := widget.NewLabel("Total Rest Time: 0s")
@@ -52,6 +60,7 @@ func main() {
 	w.SetContent(container.NewVBox(
 		restNotificationText,
 		continueButton,
+		skipButton,
 		exitButton,
 		totalRestLabel,
 		restDurationLabel,
@@ -70,12 +79,15 @@ func main() {
 						select {
 						case <-stopTicker: // Wait for a signal to stop the current timer
 							w.Hide()
-							endTime := time.Now()                 // Record the time when the Continue button is pressed
+							endTime := time.Now()                 // Record the time when the Continue or Skip button is pressed
 							elapsedTime := endTime.Sub(startTime) // Calculate the elapsed time
 							totalRestTime += elapsedTime          // Add the elapsed time to the total rest time
 							log.Printf("Rest duration: %v\n", elapsedTime)
 							log.Printf("Total rest time: %v\n", totalRestTime)
 							totalRestLabel.SetText(fmt.Sprintf("Total Rest Time: %s", totalRestTime.Round(time.Second).String()))
+							return
+						case <-skipTicker: // Wait for a signal to skip the rest
+							w.Hide()
 							return
 						default:
 							elapsed := time.Since(startTime).Round(time.Second)
