@@ -26,15 +26,15 @@ func main() {
 	w := a.NewWindow("Rest time")
 
 	ticker := time.NewTicker(time.Duration(intervalMinutes) * time.Minute)
-	stopTicker := make(chan struct{})      // Канал для остановки текущего таймера
-	startNextTicker := make(chan struct{}) // Канал для запуска следующего таймера
-	totalRestTime := time.Duration(0)      // Переменная для подсчета общего времени отдыха
+	stopTicker := make(chan struct{})      // Channel to stop the current timer
+	startNextTicker := make(chan struct{}) // Channel to start the next timer
+	totalRestTime := time.Duration(0)      // Variable to count the total rest time
 
 	restNotificationText := widget.NewLabel("You need to rest! Press 'Continue button' after the rest")
 	continueButton := widget.NewButton("Continue", func() {
 		w.Hide()
-		stopTicker <- struct{}{}      // Отправляем сигнал для остановки текущего таймера
-		startNextTicker <- struct{}{} // Отправляем сигнал для запуска следующего таймера
+		stopTicker <- struct{}{}      // Send a signal to stop the current timer
+		startNextTicker <- struct{}{} // Send a signal to start the next timer
 		log.Println("Continue button pressed")
 	})
 
@@ -43,10 +43,10 @@ func main() {
 
 	exitButton := widget.NewButton("Exit", func() {
 		w.Hide()
-		stopTicker <- struct{}{} // Отправляем сигнал для остановки текущего таймера
+		stopTicker <- struct{}{} // Send a signal to stop the current timer
 		log.Println("Exit button pressed")
 		dialog.ShowInformation("Rest Timer", "Program interrupted", w)
-		os.Exit(0) // Завершаем программу
+		os.Exit(0) // Exit the program
 	})
 
 	w.SetContent(container.NewVBox(
@@ -61,18 +61,18 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				startTime := time.Now() // Запоминаем время начала отдыха
+				startTime := time.Now() // Record the start time of the rest
 				w.Show()
 				log.Println("Notification appeared")
 
 				go func() {
 					for {
 						select {
-						case <-stopTicker: // Ждем сигнала для остановки текущего таймера
+						case <-stopTicker: // Wait for a signal to stop the current timer
 							w.Hide()
-							endTime := time.Now()                 // Запоминаем время нажатия кнопки Continue
-							elapsedTime := endTime.Sub(startTime) // Вычисляем прошедшее время
-							totalRestTime += elapsedTime          // Добавляем прошедшее время к общему времени отдыха
+							endTime := time.Now()                 // Record the time when the Continue button is pressed
+							elapsedTime := endTime.Sub(startTime) // Calculate the elapsed time
+							totalRestTime += elapsedTime          // Add the elapsed time to the total rest time
 							log.Printf("Rest duration: %v\n", elapsedTime)
 							log.Printf("Total rest time: %v\n", totalRestTime)
 							totalRestLabel.SetText(fmt.Sprintf("Total Rest Time: %s", totalRestTime.Round(time.Second).String()))
@@ -85,10 +85,10 @@ func main() {
 					}
 				}()
 
-				<-startNextTicker                                                     // Ждем сигнала для запуска следующего таймера
-				ticker = time.NewTicker(time.Duration(intervalMinutes) * time.Minute) // Запускаем новый таймер
-			case <-startNextTicker: // Ждем сигнала для запуска следующего таймера
-				ticker = time.NewTicker(time.Duration(intervalMinutes) * time.Minute) // Запускаем новый таймер
+				<-startNextTicker                                                     // Wait for a signal to start the next timer
+				ticker = time.NewTicker(time.Duration(intervalMinutes) * time.Minute) // Start a new timer
+			case <-startNextTicker: // Wait for a signal to start the next timer
+				ticker = time.NewTicker(time.Duration(intervalMinutes) * time.Minute) // Start a new timer
 			}
 		}
 	}()
