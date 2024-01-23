@@ -41,10 +41,14 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
+				startTime := time.Now() // Запоминаем время начала отдыха
 				w.Show()
 				log.Println("Notification appeared")
 				<-stopTicker // Ждем сигнала для остановки текущего таймера
 				w.Hide()
+				endTime := time.Now()                 // Запоминаем время нажатия кнопки Close
+				elapsedTime := endTime.Sub(startTime) // Вычисляем прошедшее время
+				log.Printf("Rest duration: %v\n", elapsedTime)
 				ticker.Stop()                                                         // Останавливаем текущий таймер
 				<-startNextTicker                                                     // Ждем сигнала для запуска следующего таймера
 				ticker = time.NewTicker(time.Duration(intervalMinutes) * time.Minute) // Запускаем новый таймер
