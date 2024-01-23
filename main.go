@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -23,6 +24,7 @@ func main() {
 	ticker := time.NewTicker(time.Duration(intervalMinutes) * time.Minute)
 	stopTicker := make(chan struct{})      // Канал для остановки текущего таймера
 	startNextTicker := make(chan struct{}) // Канал для запуска следующего таймера
+	totalRestTime := time.Duration(0)      // Переменная для подсчета общего времени отдыха
 
 	hello := widget.NewLabel("You need to rest!")
 	closeButton := widget.NewButton("Close", func() {
@@ -32,9 +34,12 @@ func main() {
 		log.Println("Close button pressed")
 	})
 
+	totalRestLabel := widget.NewLabel("Total Rest Time: 0s")
+
 	w.SetContent(container.NewVBox(
 		hello,
 		closeButton,
+		totalRestLabel,
 	))
 
 	go func() {
@@ -48,7 +53,10 @@ func main() {
 				w.Hide()
 				endTime := time.Now()                 // Запоминаем время нажатия кнопки Close
 				elapsedTime := endTime.Sub(startTime) // Вычисляем прошедшее время
+				totalRestTime += elapsedTime          // Добавляем прошедшее время к общему времени отдыха
 				log.Printf("Rest duration: %v\n", elapsedTime)
+				log.Printf("Total rest time: %v\n", totalRestTime)
+				totalRestLabel.SetText(fmt.Sprintf("Total Rest Time: %s", totalRestTime.Round(time.Second).String()))
 				ticker.Stop()                                                         // Останавливаем текущий таймер
 				<-startNextTicker                                                     // Ждем сигнала для запуска следующего таймера
 				ticker = time.NewTicker(time.Duration(intervalMinutes) * time.Minute) // Запускаем новый таймер
@@ -61,6 +69,7 @@ func main() {
 	log.Println("Rest timer program successfully started!")
 
 	defer func() {
+		log.Printf("Total rest time during the program: %v\n", totalRestTime)
 		log.Println("Rest timer program successfully terminated!")
 	}()
 
