@@ -6,8 +6,10 @@ import (
 	"log"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -35,7 +37,6 @@ func main() {
 	})
 
 	totalRestLabel := widget.NewLabel("Total Rest Time: 0s")
-
 	w.SetContent(container.NewVBox(
 		hello,
 		closeButton,
@@ -65,6 +66,11 @@ func main() {
 			}
 		}
 	}()
+
+	w.Resize(fyne.NewSize(300, 200))
+	w.SetFixedSize(true)
+	w.CenterOnScreen()
+	w.SetIcon(theme.FyneLogo())
 
 	log.Println("Rest timer program successfully started!")
 
