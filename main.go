@@ -37,10 +37,13 @@ func main() {
 	})
 
 	totalRestLabel := widget.NewLabel("Total Rest Time: 0s")
+	restDurationLabel := widget.NewLabel("Rest Duration: 0s")
+
 	w.SetContent(container.NewVBox(
 		hello,
 		closeButton,
 		totalRestLabel,
+		restDurationLabel,
 	))
 
 	go func() {
@@ -50,15 +53,27 @@ func main() {
 				startTime := time.Now() // Запоминаем время начала отдыха
 				w.Show()
 				log.Println("Notification appeared")
-				<-stopTicker // Ждем сигнала для остановки текущего таймера
-				w.Hide()
-				endTime := time.Now()                 // Запоминаем время нажатия кнопки Close
-				elapsedTime := endTime.Sub(startTime) // Вычисляем прошедшее время
-				totalRestTime += elapsedTime          // Добавляем прошедшее время к общему времени отдыха
-				log.Printf("Rest duration: %v\n", elapsedTime)
-				log.Printf("Total rest time: %v\n", totalRestTime)
-				totalRestLabel.SetText(fmt.Sprintf("Total Rest Time: %s", totalRestTime.Round(time.Second).String()))
-				ticker.Stop()                                                         // Останавливаем текущий таймер
+
+				go func() {
+					for {
+						select {
+						case <-stopTicker: // Ждем сигнала для остановки текущего таймера
+							w.Hide()
+							endTime := time.Now()                 // Запоминаем время нажатия кнопки Close
+							elapsedTime := endTime.Sub(startTime) // Вычисляем прошедшее время
+							totalRestTime += elapsedTime          // Добавляем прошедшее время к общему времени отдыха
+							log.Printf("Rest duration: %v\n", elapsedTime)
+							log.Printf("Total rest time: %v\n", totalRestTime)
+							totalRestLabel.SetText(fmt.Sprintf("Total Rest Time: %s", totalRestTime.Round(time.Second).String()))
+							return
+						default:
+							elapsed := time.Since(startTime).Round(time.Second)
+							restDurationLabel.SetText(fmt.Sprintf("Rest Duration: %s", elapsed.String()))
+							time.Sleep(time.Second)
+						}
+					}
+				}()
+
 				<-startNextTicker                                                     // Ждем сигнала для запуска следующего таймера
 				ticker = time.NewTicker(time.Duration(intervalMinutes) * time.Minute) // Запускаем новый таймер
 			case <-startNextTicker: // Ждем сигнала для запуска следующего таймера
