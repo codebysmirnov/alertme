@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -28,20 +30,29 @@ func main() {
 	startNextTicker := make(chan struct{}) // Канал для запуска следующего таймера
 	totalRestTime := time.Duration(0)      // Переменная для подсчета общего времени отдыха
 
-	hello := widget.NewLabel("You need to rest!")
-	closeButton := widget.NewButton("Close", func() {
+	restNotificationText := widget.NewLabel("You need to rest! Press 'Continue button' after the rest")
+	continueButton := widget.NewButton("Continue", func() {
 		w.Hide()
 		stopTicker <- struct{}{}      // Отправляем сигнал для остановки текущего таймера
 		startNextTicker <- struct{}{} // Отправляем сигнал для запуска следующего таймера
-		log.Println("Close button pressed")
+		log.Println("Continue button pressed")
 	})
 
 	totalRestLabel := widget.NewLabel("Total Rest Time: 0s")
 	restDurationLabel := widget.NewLabel("Rest Duration: 0s")
 
+	exitButton := widget.NewButton("Exit", func() {
+		w.Hide()
+		stopTicker <- struct{}{} // Отправляем сигнал для остановки текущего таймера
+		log.Println("Exit button pressed")
+		dialog.ShowInformation("Rest Timer", "Program interrupted", w)
+		os.Exit(0) // Завершаем программу
+	})
+
 	w.SetContent(container.NewVBox(
-		hello,
-		closeButton,
+		restNotificationText,
+		continueButton,
+		exitButton,
 		totalRestLabel,
 		restDurationLabel,
 	))
@@ -59,7 +70,7 @@ func main() {
 						select {
 						case <-stopTicker: // Ждем сигнала для остановки текущего таймера
 							w.Hide()
-							endTime := time.Now()                 // Запоминаем время нажатия кнопки Close
+							endTime := time.Now()                 // Запоминаем время нажатия кнопки Continue
 							elapsedTime := endTime.Sub(startTime) // Вычисляем прошедшее время
 							totalRestTime += elapsedTime          // Добавляем прошедшее время к общему времени отдыха
 							log.Printf("Rest duration: %v\n", elapsedTime)
