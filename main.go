@@ -11,8 +11,13 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+)
+
+const (
+	appName = "AlertMe"
 )
 
 func main() {
@@ -22,16 +27,28 @@ func main() {
 
 	log.Printf("Rest timer interval set to %d minutes\n", intervalMinutes)
 
-	a := app.New()
-	w := a.NewWindow("Rest time")
-
 	ticker := time.NewTicker(time.Duration(intervalMinutes) * time.Minute)
 	stopTicker := make(chan struct{})      // Channel to stop the current timer
 	startNextTicker := make(chan struct{}) // Channel to start the next timer
 	skipTicker := make(chan struct{})      // Channel to skip the rest
 	totalRestTime := time.Duration(0)      // Variable to count the total rest time
 
-	restNotificationText := widget.NewLabel("You need to rest! Press 'Continue button' after the rest")
+	App := app.NewWithID(appName)
+	// enable the tray menu if this is a desktop application
+	if desk, ok := App.(desktop.App); ok {
+		m := fyne.NewMenu("Main",
+			fyne.NewMenuItem("Start rest", func() {
+				log.Println("rest started")
+			}))
+		desk.SetSystemTrayMenu(m)
+	}
+
+	w := App.NewWindow("Rest time")
+	w.Resize(fyne.NewSize(300, 200))
+	w.SetFixedSize(true)
+	w.CenterOnScreen()
+	w.SetIcon(theme.FyneLogo())
+
 	continueButton := widget.NewButton("Continue", func() {
 		w.Hide()
 		stopTicker <- struct{}{}      // Send a signal to stop the current timer
@@ -57,6 +74,7 @@ func main() {
 		os.Exit(0) // Exit the program
 	})
 
+	restNotificationText := widget.NewLabel("You need to rest! Press 'Continue button' after the rest")
 	w.SetContent(container.NewVBox(
 		restNotificationText,
 		continueButton,
@@ -105,11 +123,6 @@ func main() {
 		}
 	}()
 
-	w.Resize(fyne.NewSize(300, 200))
-	w.SetFixedSize(true)
-	w.CenterOnScreen()
-	w.SetIcon(theme.FyneLogo())
-
 	log.Println("Rest timer program successfully started!")
 
 	defer func() {
@@ -117,5 +130,5 @@ func main() {
 		log.Println("Rest timer program successfully terminated!")
 	}()
 
-	a.Run()
+	App.Run()
 }
