@@ -59,7 +59,8 @@ func (rn *RestNotifier) SetupSystemTrayMenu() {
 	if desk, ok := rn.App.(desktop.App); ok {
 		m := fyne.NewMenu("Main",
 			fyne.NewMenuItem("Start rest", func() {
-				log.Println("rest started")
+				log.Println("Tray: the start notification button pushed")
+				rn.ShowNotification()
 			}))
 		desk.SetSystemTrayMenu(m)
 	}
