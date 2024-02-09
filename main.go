@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -52,11 +51,16 @@ func (rn *RestNotifier) InitializeWindow() {
 	rn.Window.Resize(fyne.NewSize(300, 200))
 	rn.Window.SetFixedSize(true)
 	rn.Window.CenterOnScreen()
-	rn.Window.SetIcon(theme.FyneLogo())
 }
 
 func (rn *RestNotifier) SetupSystemTrayMenu() {
 	if desk, ok := rn.App.(desktop.App); ok {
+		ico, err := fyne.LoadResourceFromPath("./assets/main-tray-ico.png")
+		if err != nil {
+			log.Printf("load tray icon failed %s", err)
+			return
+		}
+		desk.SetSystemTrayIcon(ico)
 		m := fyne.NewMenu("Main",
 			fyne.NewMenuItem("Start rest", func() {
 				log.Println("Tray: the start notification button pushed")
