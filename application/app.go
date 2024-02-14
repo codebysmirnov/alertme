@@ -36,9 +36,11 @@ func Init(intervalMinutes int) AlertMe {
 	a := newApplication()
 	a.setupSystemTrayMenu()
 
-	a.RestNotifier = newRestNotifier(intervalMinutes)
-	a.RestNotifier.initializeRestWindow(a.App.NewWindow("Rest time"))
-	a.RestNotifier.setupUI()
+	a.RestNotifier = restNotifierInit(
+		intervalMinutes,
+		a.App.NewWindow("Rest time"),
+		a.App.NewWindow("Rest statistic"),
+	)
 
 	return a
 }
@@ -65,6 +67,7 @@ func (a *AlertMe) setupSystemTrayMenu() {
 			}),
 			fyne.NewMenuItem("Statistic", func() {
 				log.Println("Tray: the statistic button pushed")
+				a.RestNotifier.showStatistic()
 			}),
 		)
 
