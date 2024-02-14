@@ -118,6 +118,12 @@ func (rn *RestNotifier) setupRestWindowUI() {
 		rn.totalRestLabel,
 		rn.restDurationLabel,
 	))
+	rn.restWindow.SetCloseIntercept(func() {
+		rn.skipTicker <- struct{}{}      // Send a signal to skip the rest
+		rn.startNextTicker <- struct{}{} // Send a signal to start the next timer
+		log.Println("closing the rest window")
+		rn.restWindow.Hide()
+	})
 }
 
 // showNotification displays the rest notification restWindow.
