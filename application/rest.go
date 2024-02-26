@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
@@ -14,16 +15,17 @@ import (
 
 // RestNotifier represents a notifier for rest intervals.
 type RestNotifier struct {
-	restWindow        fyne.Window   // restWindow holds the Fyne UI restWindow for rest notifications.
-	statisticWindow   fyne.Window   // statisticWindow shows statistic about rest
-	ticker            *time.Ticker  // ticker is a time.Ticker for triggering rest notifications at regular intervals.
-	stopTicker        chan struct{} // stopTicker is a channel for signaling to stop the current rest timer.
-	startNextTicker   chan struct{} // startNextTicker is a channel for signaling to start the next rest timer.
-	skipTicker        chan struct{} // skipTicker is a channel for signaling to skip the rest notification.
-	totalRestTime     time.Duration // totalRestTime holds the accumulated total rest time.
-	totalRestLabel    *widget.Label // totalRestLabel is a Fyne widget for displaying the total accumulated rest time.
-	restDurationLabel *widget.Label // restDurationLabel is a Fyne widget for displaying the current rest duration.
-	intervalMinutes   int           // intervalMinutes is the interval duration in minutes between rest notifications.
+	restWindow            fyne.Window // restWindow holds the Fyne UI restWindow for rest notifications.
+	statisticWindow       fyne.Window // statisticWindow shows statistic about rest
+	statisticTotalResTime *canvas.Text
+	ticker                *time.Ticker  // ticker is a time.Ticker for triggering rest notifications at regular intervals.
+	stopTicker            chan struct{} // stopTicker is a channel for signaling to stop the current rest timer.
+	startNextTicker       chan struct{} // startNextTicker is a channel for signaling to start the next rest timer.
+	skipTicker            chan struct{} // skipTicker is a channel for signaling to skip the rest notification.
+	totalRestTime         time.Duration // totalRestTime holds the accumulated total rest time.
+	totalRestLabel        *widget.Label // totalRestLabel is a Fyne widget for displaying the total accumulated rest time.
+	restDurationLabel     *widget.Label // restDurationLabel is a Fyne widget for displaying the current rest duration.
+	intervalMinutes       int           // intervalMinutes is the interval duration in minutes between rest notifications.
 }
 
 // newRestNotifier creates a new RestNotifier with the given interval in minutes.
@@ -73,13 +75,14 @@ func (rn *RestNotifier) initializeStatisticWindow(window fyne.Window) {
 
 // setupRestStatisticUI configures the user interface components for the statistic window.
 func (rn *RestNotifier) setupRestStatisticUI() {
-	exitButton := widget.NewButton("Exit", func() {
-		log.Println("Rest statistic exit button pressed")
-		os.Exit(0)
+	exitButton := widget.NewButton("Close", func() {
+		log.Println("Rest statistic close button pressed")
+		rn.statisticWindow.Hide()
 	})
+	rn.statisticTotalResTime = canvas.NewText("Total rest time: ", nil)
+	rn.statisticTotalResTime.Text = rn.totalRestTime.String()
 	rn.statisticWindow.SetContent(container.NewVBox(
-
-		rn.totalRestLabel,
+		rn.statisticTotalResTime,
 		exitButton,
 	))
 	rn.statisticWindow.SetCloseIntercept(func() {
@@ -145,6 +148,7 @@ func (rn *RestNotifier) showNotification() {
 				log.Printf("Total rest time: %v\n", rn.totalRestTime)
 				// Update UI with the total rest time
 				rn.totalRestLabel.SetText(fmt.Sprintf("Total Rest Time: %s", rn.totalRestTime.Round(time.Second).String()))
+				rn.statisticTotalResTime.Text = rn.totalRestLabel.Text
 				return
 			case <-rn.skipTicker: // Wait for a signal to skip the rest
 				rn.restWindow.Hide()
@@ -165,6 +169,7 @@ func (rn *RestNotifier) showStatistic() {
 		log.Println("The statistics window is not initialized")
 		return
 	}
+	rn.statisticTotalResTime.Refresh()
 	rn.statisticWindow.Show()
 }
 
